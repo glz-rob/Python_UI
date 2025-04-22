@@ -1,10 +1,30 @@
+from time import monotonic
+
 from textual.app import App, ComposeResult
 from textual.containers import HorizontalGroup, VerticalScroll
+from textual.reactive import reactive
 from textual.widgets import Button, Digits, Footer, Header
 
 
 class TimeDisplay(Digits):
     """Displays elapsed time"""
+
+    start_time = reactive(monotonic)
+    time = reactive(0.0)
+
+    def on_mount(self) -> None:
+        """Called when widget is added to the app"""
+        self.set_interval(1/60, self.update_time)
+
+    def update_time(self) -> None:
+        """Update time to current time"""
+        self.time = monotonic() - self.start_time
+
+    def watch_time(self, time: float) -> None:
+        """Called when the time attribute changes"""
+        minutes, seconds = divmod(time, 60)
+        hours, minutes = divmod(minutes, 60)
+        self.update(f"{hours:02,.0f}:{minutes:02,.0f}:{seconds:05.2f}")
 
 
 class Stopwatch(HorizontalGroup):
@@ -22,7 +42,7 @@ class Stopwatch(HorizontalGroup):
         yield Button("Start", id="start", variant="success")
         yield Button("Stop", id="stop", variant="error")
         yield Button("Reset", id="reset")
-        yield TimeDisplay("00:00:00.00")
+        yield TimeDisplay()
 
 
 class StopwatchApp(App):

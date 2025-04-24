@@ -72,13 +72,29 @@ class StopwatchApp(App):
     """Stopwatch manager"""
 
     CSS_PATH = "stopwatch03.tcss"
-    BINDINGS = [("d", "toggle_dark", "Toggle dark mode")]
+    BINDINGS = [
+        ("d", "toggle_dark", "Toggle dark mode"),
+        ("a", "add_stopwatch", "Add"),
+        ("r", "remove_stopwatch", "Remove")
+    ]
 
     def compose(self) -> ComposeResult:
         """Create child widgets for the app"""
         yield Header()
         yield Footer()
-        yield VerticalScroll(Stopwatch(), Stopwatch(), Stopwatch())
+        yield VerticalScroll(Stopwatch(), Stopwatch(), Stopwatch(), id="timers")
+
+    def action_add_stopwatch(self) -> None:
+        """Add a new timer"""
+        new_stopwatch = Stopwatch()
+        self.query_one("#timers").mount(new_stopwatch)
+        new_stopwatch.scroll_visible()
+
+    def action_remove_stopwatch(self) -> None:
+        """Remove a timer"""
+        timers = self.query("Stopwatch")
+        if timers:
+            timers.last().remove()
 
     def action_toggle_dark(self) -> None:
         """Toggles the dark mode"""

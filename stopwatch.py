@@ -11,14 +11,15 @@ class TimeDisplay(Digits):
 
     start_time = reactive(monotonic)
     time = reactive(0.0)
+    total = reactive(0.0)
 
     def on_mount(self) -> None:
         """Called when widget is added to the app"""
-        self.set_interval(1/60, self.update_time)
+        self.update_timer = self.set_interval(1/60, self.update_time, pause=True)
 
     def update_time(self) -> None:
         """Update time to current time"""
-        self.time = monotonic() - self.start_time
+        self.time = self.total + (monotonic() - self.start_time)
 
     def watch_time(self, time: float) -> None:
         """Called when the time attribute changes"""
@@ -26,16 +27,38 @@ class TimeDisplay(Digits):
         hours, minutes = divmod(minutes, 60)
         self.update(f"{hours:02,.0f}:{minutes:02,.0f}:{seconds:05.2f}")
 
+    def start(self) -> None:
+        """Start time updating"""
+        self.start_time = monotonic()
+        self.update_timer.resume()
+
+    def stop(self) -> None:
+        """Stop time updating"""
+        self.update_timer.pause()
+        self.total += monotonic() - self.start_time
+        self.time = self.total
+
+    def reset(self) -> None:
+        """Reset time display to zero"""
+        self.total = 0
+        self.time = 0
 
 class Stopwatch(HorizontalGroup):
     """Stopwatch widget"""
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         """Called when a button is pressed"""
+        button_id = event.button.id
+        time_display = self.query_one(TimeDisplay)
+
         if event.button.id == "start":
+            time_display.start()
             self.add_class("started")
         elif event.button.id == "stop":
+            time_display.stop()
             self.remove_class("started")
+        elif button_id == "reset":
+            time_display.reset()
 
     def compose(self) -> ComposeResult:
         """Create child widgets of stopwatch"""
